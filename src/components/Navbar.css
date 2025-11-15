@@ -1,0 +1,146 @@
+/* ==========================
+   Navbar Container
+========================== */
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background-color: #0b9bfa;
+  color: white;
+  position: relative;
+  font-family: 'Inter', sans-serif;
+  z-index: 100;
+}
+
+.navbar-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.navbar-logo-img {
+  height: 45px;
+  width: auto;
+  border-radius: 50%; /* optional: makes it circular */
+}
+
+.navbar-title {
+  font-size: 18px;
+  font-weight: bold;
+  color: #fff; /* adjust based on your navbar background */
+}
+
+
+.btn-login {
+  background-color: #fc1515;
+  color: white;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.btn-login:hover {
+  background-color: #059669;
+}
+
+/* Logo + Brand */
+.navbar-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.navbar-title {
+  font-size: 1.2rem;  /* Smaller font size */
+  font-weight: bold;
+  text-transform: uppercase;
+  color: smoke-white; /* Change text color to black */
+  margin: 0;
+  letter-spacing: 1px; /* Optional: Add a little spacing between letters for better readability */
+}
+
+/* Navigation Links */
+.navbar-links {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.navbar-links a {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: white;
+  text-decoration: none;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: background 0.2s, color 0.2s;
+}
+
+.navbar-links a:hover {
+  background-color: #2563eb;
+}
+
+.navbar-links a.active {
+  background-color: #3b82f6;
+}
+
+/* Icons */
+.nav-icon {
+  height: 20px;
+  width: 20px;
+}
+
+/* Hamburger Button */
+.hamburger-btn {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: white;
+}
+
+.hamburger-icon {
+  height: 28px;
+  width: 28px;
+}
+
+/* ==========================
+   Responsive Styles
+========================== */
+@media (max-width: 768px) {
+  .navbar-links {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background-color: #0a2540;
+    flex-direction: column;
+    width: 200px;
+    transform: translateY(-20px);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s ease;
+    border-radius: 0 0 12px 12px;
+    padding: 10px 0;
+  }
+
+  .navbar-links.open {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .navbar-links a {
+    width: 100%;
+    padding: 10px 16px;
+  }
+
+  .hamburger-btn {
+    display: block;
+  }
+}
+

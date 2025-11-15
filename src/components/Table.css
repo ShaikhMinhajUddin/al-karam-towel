@@ -1,0 +1,345 @@
+/* ==========================
+   Container
+========================== */
+.inspection-table-container {
+  background: #f8f9fa; /* light, clean background */
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  font-family: 'Inter', sans-serif;
+  color: #000000;
+}
+
+/* Table Header */
+.table-header {
+  flex-direction: column;
+  gap: 8px;
+}
+
+.search-input {
+  width: 100%; /* take full width on small screens */
+  max-width: 250px; /* optional on large screens */
+  margin-bottom: 10px;
+}
+
+
+.table-header h4 {
+  color: #0a2540;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* ==========================
+   Search Input
+========================== */
+.search-input {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  font-size: 0.9rem;
+  color: #111827;
+  background-color: #ffffff;
+  transition: border 0.2s;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+/* ==========================
+   Table Styles
+========================== */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.data-table th,
+.data-table td { border-bottom: 2px solid #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+   border-right: 1px solid #e5e7eb; 
+}
+.data-table th:last-child,
+.data-table td:last-child {
+  border-right: none; /* remove border on last column for cleaner look */
+}
+.data-table td {
+  border-bottom: 1px solid #e5e7eb; /* keeps horizontal borders intact */
+}
+
+.data-table th {
+  background: #5d5e5f;
+  color: #111111;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.data-table tr:nth-child(even) {
+  background-color: #f9fafb;
+}
+
+.data-table tr:hover {
+  background-color: #eef2ff;
+  transition: background 0.2s;
+}
+
+/* ==========================
+   Buttons
+========================== */
+.actions button,
+.btn-edit, .btn-delete, .btn-save, .btn-cancel, .btn-confirm {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+}
+
+.btn-edit {
+  background: #3b82f6;
+  color: white;
+}
+
+.btn-edit:hover {
+  background: #2563eb;
+}
+
+.btn-delete {
+  background: #ef4444;
+  color: white;
+}
+
+.btn-delete:hover {
+  background: #dc2626;
+}
+
+.btn-save, .btn-confirm {
+  background: #10b981;
+  color: white;
+}
+
+.btn-save:hover, .btn-confirm:hover {
+  background: #059669;
+}
+
+.btn-cancel {
+  background: #6b7280;
+  color: white;
+}
+
+.btn-cancel:hover {
+  background: #4b5563;
+}
+
+/* ==========================
+   Pagination
+========================== */
+.pagination {
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+
+.pagination button {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid #0a2540;
+  background: white;
+  cursor: pointer;  margin-left: 1.5px;
+
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+
+.pagination button.active {
+  background: #0a2540;
+  color: white;
+}
+
+.pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ==========================
+   Toast Notifications
+========================== */
+.toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: white;
+  font-weight: 500;
+  z-index: 1050;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.toast.success {
+  background-color: #10b981;
+}
+
+.toast.error {
+  background-color: #ef4444;
+}
+
+.close-btn {
+  border: none;
+  background: transparent;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+/* ==========================
+   Modal
+========================== */
+/* Modal overlay */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+/* Modal container */
+.modal.professional {
+  background: #fff;
+  border-radius: 12px;
+  max-width: 1000px;
+  width: 90%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  animation: fadeIn 0.3s ease-in-out;
+  overflow: hidden;
+}
+
+/* Modal Header */
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  background-color: #1e3a8a;
+  color: #fff;
+}
+.modal-header h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+.modal-close {
+  font-size: 1.5rem;
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+}
+
+/* Modal Body */
+.modal-body {
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+.modal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+.modal-field {
+  display: flex;
+  flex-direction: column;
+}
+.field-label {
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+  color: #334155;
+}
+.field-input {
+  padding: 0.5rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
+/* Modal Footer */
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 1rem 1.5rem;
+  background: #f1f5f9;
+  border-top: 1px solid #e2e8f0;
+}
+.btn-cancel {
+  padding: 0.5rem 1rem;
+  margin-right: 0.5rem;
+  background: #e5e7eb;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+}
+.btn-save {
+  padding: 0.5rem 1rem;
+  background: #1e3a8a;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+}
+.btn-save:hover {
+  background: #3748b2;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ==========================
+   Confirm Dialog
+========================== */
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1050;
+}
+
+.confirm-box {
+  background: #ffffff;
+  padding: 24px;
+  border-radius: 12px;
+  width: 350px;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+}
+.table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}

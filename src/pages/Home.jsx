@@ -7,9 +7,13 @@ export default function Home() {
       <Navbar />
 
       <div className="page-content">
-        <h1 className="text-2xl font-bold mb-4">
-          QUALITY PERORMANCE DASHBOARD
-        </h1>
+        <div style={{ overflow: "hidden", width: "100%" }}>
+  <h1 className="animated-heading">
+    QUALITY PERFORMANCE DASHBOARD
+  </h1>
+</div>
+
+
         <Dashboard />
       </div>
 

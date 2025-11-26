@@ -1,19 +1,32 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Home from "./pages/Home";
+import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import Navbar from "./components/Navbar";
+import Dashboard from "./components/Dashboard";
 import AddInspection from "./pages/AddInspection";
 import ViewInspections from "./pages/ViewInspection";
 import Login from "./pages/Login";
 import ProtectedRoute from "./components/ProtectedRoute";
+import Welcome from "./pages/Welcome";
 
-export default function App() {
+function AppWrapper() {
+  const location = useLocation();
+
+  // Navbar sirf login page par hide hoga
+  const showNavbar = !["/", "/login"].includes(location.pathname);
+
+
   return (
-    <Router>
+    <>
+      {showNavbar && <Navbar />}
+
       <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<Home />} />
+        {/* First screen (DEFAULT) */}
+        <Route path="/" element={<Welcome />} />
+
+        {/* Dashboard open after clicking button */}
+        <Route path="/dashboard" element={<Dashboard />} />
+
         <Route path="/login" element={<Login />} />
 
-        {/* Protected Routes */}
         <Route
           path="/add"
           element={
@@ -22,6 +35,7 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/view"
           element={
@@ -31,6 +45,14 @@ export default function App() {
           }
         />
       </Routes>
+    </>
+  );
+}
+
+export default function App() {
+  return (
+    <Router>
+      <AppWrapper />
     </Router>
   );
 }

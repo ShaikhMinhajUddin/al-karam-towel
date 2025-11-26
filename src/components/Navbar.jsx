@@ -1,4 +1,4 @@
-import logo from "../images/aktilogo1.png";
+import logo from "../images/logooo.png";
 
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -31,17 +31,17 @@ export default function Navbar() {
   };
 
   const allLinks = [
-    { to: "/", label: "Dashboard", icon: <HomeIcon className="nav-icon" /> },
+    { to: "/dashboard", label: "Dashboard", icon: <HomeIcon className="nav-icon" /> },
     { to: "/add", label: "Add Inspection", icon: <PlusCircleIcon className="nav-icon" /> },
     { to: "/view", label: "View Inspections", icon: <EyeIcon className="nav-icon" /> },
   ];
 
   const guestLinks = [
-    { to: "/", label: "Dashboard", icon: <HomeIcon className="nav-icon" /> },
+    { to: "/dashboard", label: "Dashboard", icon: <HomeIcon className="nav-icon" /> },
   ];
 
   return (
-    <nav className="navbar">
+    <nav className="navbar" style={{ marginLeft: 0, transition: "margin-left 0.3s" }}>
       {/* Title */}
       <div className="navbar-logo">
   <img src={logo} alt="Company Logo" className="navbar-logo-img" />

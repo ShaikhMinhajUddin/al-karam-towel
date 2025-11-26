@@ -2,7 +2,7 @@ import { useState } from "react";
 import api from "../api";
 import "../components/Form.css";
 
-export default function InspectionForm() {
+export default function InspectionForm({ filters, setFilters }) {
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 20 }, (_, i) => currentYear - i);
   const months = [
@@ -11,6 +11,7 @@ export default function InspectionForm() {
   ];
 
   const initialState = {
+    customer: "",
     serialNo: "",
     year: years[0],
     month: months[0],
@@ -34,7 +35,7 @@ export default function InspectionForm() {
     major: "",
     minor: "",
     oql: "",
-    percentAllowed: "",
+    
     critical: "",
     actualMajor: "",
     actualMinor: "",
@@ -70,60 +71,75 @@ export default function InspectionForm() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-  const numericFields = [
-    
-  ];
-
-  const textFields = [
-  
-  ];
-
+  const numericFields = [];
+  const textFields = [];
   const statusFields = ["pass","fail","abort","pending"];
 
   // ---------------- Handle Change ----------------
   const handleChange = (e) => {
-  const { name, value } = e.target;
-  let newValue = value;
+    const { name, value } = e.target;
+    let newValue = value;
 
-  
+    // ---------- STATUS FIELDS (Pass/Fail/Abort/Pending) ----------
+    if (statusFields.includes(name)) {
+      if (value === "") {
+        setForm((prev) => ({ ...prev, [name]: "" }));
+        return;
+      }
+      if (value !== "0" && value !== "1") return;
 
-  if (statusFields.includes(name)) {
-    if (value !== "0" && value !== "1" && value !== "") return;
-    if (value === "1") {
-      const updated = { ...form, [name]: 1 };
-      statusFields.forEach(f => { if (f !== name) updated[f] = 0; });
-      updated.inspectionStatus =
-        name === "pass" ? "Pass" :
-        name === "fail" ? "Fail" :
-        name === "pending" ? "Pending" :
+      const updated = { ...form, [name]: Number(value) };
+      if (value === "1") {
+        statusFields.forEach((f) => {
+          updated[f] = f === name ? 1 : 0;
+        });
+        updated.inspectionStatus =
+          name === "pass"
+            ? "Pass"
+            : name === "fail"
+            ? "Fail"
+            : name === "pending"
+            ? "Pending"
+            : "Abort";
+      }
+
       setForm(updated);
       return;
     }
-  }
 
-  const updatedForm = { ...form, [name]: newValue };
+    const updatedForm = { ...form, [name]: newValue };
 
-  const major = parseFloat(updatedForm.major) || 0;
-  const minor = parseFloat(updatedForm.minor) || 0;
-  const critical = parseFloat(updatedForm.critical) || 0;
-  const sampleSize = parseFloat(updatedForm.sampleSize) || 0;
-  const lassar = parseFloat(updatedForm.lassar) || 0;
-  const patta = parseFloat(updatedForm.patta) || 0;
-  const shadeOut = parseFloat(updatedForm.shadeOut) || 0;
+    const minor = parseFloat(updatedForm.minor) || 0;
+    const actualMajor = parseFloat(updatedForm.actualMajor) || 0;
+    const critical = parseFloat(updatedForm.critical) || 0;
+    const lassar = parseFloat(updatedForm.lassar) || 0;
+    const patta = parseFloat(updatedForm.patta) || 0;
+    const shadeOut = parseFloat(updatedForm.shadeOut) || 0;
+    const major = parseFloat(updatedForm.major) || 0;
+    const sampleSize = parseFloat(updatedForm.sampleSize) || 0;
 
-  // Auto-calculate OQL only if the user hasn't manually entered it
-  if (name !== "oql" && form.oql !== "0") {
-    updatedForm.oql = sampleSize > 0 ? ((major / sampleSize) * 100).toFixed(2) : "";
-  }
+    // Auto-calculate actualOql
+    if (["actualMajor", "sampleSize"].includes(name)) {
+      if (!updatedForm.actualOqlManuallyEntered) {
+        updatedForm.actualOql = sampleSize > 0 ? ((actualMajor / sampleSize) * 100).toFixed(2) : "";
+      }
+    }
+    if (name === "actualOql") updatedForm.actualOqlManuallyEntered = true;
 
-  // Auto-calculate DPI only if the user hasn't manually entered it
-  if (name !== "dpi" && form.dpi !== "0") {
-    updatedForm.dpi = sampleSize > 0 ? ((major / sampleSize) * 100).toFixed(2) : "";
-  }
+    // Auto-calculate OQL & DPI
+    if (["major", "sampleSize"].includes(name)) {
+      if (!updatedForm.oqlManuallyEntered) {
+        updatedForm.oql = sampleSize > 0 ? ((major / sampleSize) * 100).toFixed(2) : "";
+      }
+      if (!updatedForm.dpiManuallyEntered) {
+        updatedForm.dpi = sampleSize > 0 ? ((major / sampleSize) * 100).toFixed(2) : "";
+      }
+    }
+    if (name === "oql") updatedForm.oqlManuallyEntered = true;
+    if (name === "dpi") updatedForm.dpiManuallyEntered = true;
 
-  setForm(updatedForm);
-};
-
+    setForm(updatedForm);
+  };
 
   // ---------------- Handle Submit ----------------
   const handleSubmit = async (e) => {
@@ -165,11 +181,11 @@ export default function InspectionForm() {
   // ---------------- Form Sections ----------------
   const sections = [
     { title: "BASIC INFORMATION", color: "#4B5563", fields: [
-      "serialNo","year","month","inspectionId","inspectionDate","servicePerformed",
+      "customer","serialNo","year","month","inspectionId","inspectionDate","servicePerformed",
       "inspectionType","dpi","bvFinal","aktiSelf","inspectorName","offeredQtyCtn",
       "offeredQtyPacks","noOfInspection","pass","fail","abort","pending","inspectionStatus","sampleSize"
     ]},
-    { title: "REQUIRED OQL 2.5 (M) / 4.0 (m)", color: "#FFD700", fields: ["major","minor","oql","percentAllowed"] },
+    { title: "REQUIRED OQL 2.5 (M) / 4.0 (m)", color: "#FFD700", fields: ["major","minor","oql"] },
     { title: "ACTUAL FINDINGS", color: "#2ECC71", fields: ["critical","actualMajor","actualMinor","actualOql"] },
     { title: "MAJOR DEFECTS DETAILS", color: "#f73c3c", fields: [
       "pulledTerry","rawEdge","weaving","uncutThread","stainMajor","skipStitch","brokenStitch",
@@ -195,36 +211,74 @@ export default function InspectionForm() {
             <div className="fields-grid">
               {section.fields.map((key) => (
                 <div key={key} className="form-field">
-                  <label>{key.replace(/([A-Z])/g, " $1")}</label>
+                  {key === "customer" ? (
+  <>
+    <label>customer</label>
+    <select
+      name="customer"
+      value={form.customer}
+      onChange={(e) => {
+        handleChange(e);
+        setFilters(prev => ({ ...prev, customer: e.target.value })); // dashboard filter ke liye
+      }}
+    >
+      <option value="Walmart">Walmart</option>
+      <option value="SAMS Club">SAMS Club</option>
+    </select>
+  </>
+) : key === "inspectionType" ? (
 
-                  {key === "year" ? (
-                    <select name="year" value={form.year} onChange={handleChange}>
-                      {years.map(y => <option key={y} value={y}>{y}</option>)}
-                    </select>
-                  ) : key === "month" ? (
-                    <select name="month" value={form.month} onChange={handleChange}>
-                      {months.map(m => <option key={m} value={m}>{m}</option>)}
-                    </select>
-                  ) : key === "inspectionStatus" ? (
-                    <input type="text" name="inspectionStatus" value={form.inspectionStatus} disabled />
-                  ) : ["pass","fail","abort","pending"].includes(key) || numericFields.includes(key) ? (
-                    <input
-                      type="number"
-                      name={key}
-                      value={form[key]}
-                      onChange={handleChange}
-                      min={0}
-                      step="1"
-                      placeholder={["pass","fail","abort","pending"].includes(key) ? "0 or 1" : ""}
-                    />
+                    <>
+                      <label>Inspection Type</label>
+                      <select
+                        name="inspectionType"
+                        value={form.inspectionType}
+                        onChange={(e) => {
+                          handleChange(e); // keeps form logic
+                          setFilters(prev => ({
+                            ...prev,
+                            inspectionType: e.target.value
+                          })); // update dashboard filter
+                        }}
+                      >
+                        <option value="All">All</option>
+                        <option value="Final">Final</option>
+                        <option value="DPI">DPI</option>
+                      </select>
+                    </>
                   ) : (
-                    <input
-                      type={key === "inspectionDate" ? "date" : "text"}
-                      name={key}
-                      value={form[key]}
-                      onChange={handleChange}
-                      placeholder={`Enter ${key.replace(/([A-Z])/g, " $1").toLowerCase()}`}
-                    />
+                    <>
+                      <label>{key.replace(/([A-Z])/g, " $1")}</label>
+                      {key === "year" ? (
+                        <select name="year" value={form.year} onChange={handleChange}>
+                          {years.map(y => <option key={y} value={y}>{y}</option>)}
+                        </select>
+                      ) : key === "month" ? (
+                        <select name="month" value={form.month} onChange={handleChange}>
+                          {months.map(m => <option key={m} value={m}>{m}</option>)}
+                        </select>
+                      ) : key === "inspectionStatus" ? (
+                        <input type="text" name="inspectionStatus" value={form.inspectionStatus} disabled />
+                      ) : ["pass","fail","abort","pending"].includes(key) || numericFields.includes(key) ? (
+                        <input
+                          type="number"
+                          name={key}
+                          value={form[key]}
+                          onChange={handleChange}
+                          min={0}
+                          step="1"
+                          placeholder={["pass","fail","abort","pending"].includes(key) ? "0 or 1" : ""}
+                        />
+                      ) : (
+                        <input
+                          type={key === "inspectionDate" ? "date" : "text"}
+                          name={key}
+                          value={form[key]}
+                          onChange={handleChange}
+                          placeholder={`Enter ${key.replace(/([A-Z])/g, " $1").toLowerCase()}`}
+                        />
+                      )}
+                    </>
                   )}
                 </div>
               ))}

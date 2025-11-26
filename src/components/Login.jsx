@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { FaEye, FaEyeSlash } from "react-icons/fa"; // Eye icon
 
 export default function Login() {
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false); // ← new
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -13,7 +15,7 @@ export default function Login() {
   useEffect(() => {
     const isAuth = sessionStorage.getItem("tc_isAuth");
     if (isAuth === "1") {
-      navigate("/", { replace: true });
+      navigate("/dashboard", { replace: true }); // redirect to dashboard
     }
   }, [navigate]);
 
@@ -26,7 +28,7 @@ export default function Login() {
       if (password === adminPassword) {
         sessionStorage.setItem("tc_isAuth", "1");
         sessionStorage.setItem("tc_auth_at", new Date().toISOString());
-        navigate("/", { replace: true }); // redirect to dashboard
+        navigate("/dashboard", { replace: true }); // redirect to dashboard
       } else {
         setError("Incorrect password.");
       }
@@ -63,13 +65,24 @@ export default function Login() {
       marginBottom: "0.5rem",
       color: "#334155",
     },
+    inputWrapper: {
+      position: "relative",
+    },
     input: {
       width: "100%",
-      padding: "0.5rem",
+      padding: "0.5rem 2.5rem 0.5rem 0.5rem", // space for icon
       marginBottom: "1rem",
       borderRadius: "6px",
       border: "1px solid #cbd5e1",
       fontSize: "1rem",
+    },
+    icon: {
+      position: "absolute",
+      right: "10px",
+      top: "50%",
+      transform: "translateY(-50%)",
+      cursor: "pointer",
+      color: "#64748b",
     },
     button: {
       width: "100%",
@@ -107,15 +120,23 @@ export default function Login() {
 
         <label style={styles.label}>
           Password
-          <input
-            type="password"
-            style={styles.input}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Enter admin password"
-            autoFocus
-            aria-label="Password"
-          />
+          <div style={styles.inputWrapper}>
+            <input
+              type={showPassword ? "text" : "password"} // ← show/hide
+              style={styles.input}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter admin password"
+              autoFocus
+              aria-label="Password"
+            />
+            <span
+              style={styles.icon}
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? <FaEyeSlash /> : <FaEye />}
+            </span>
+          </div>
         </label>
 
         {error && <div style={styles.error}>{error}</div>}

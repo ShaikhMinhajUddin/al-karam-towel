@@ -75,8 +75,8 @@
 }
 
 .data-table th {
-  background: #5d5e5f;
-  color: #111111;
+  background: #000136;
+  color: #ffffff;
   position: sticky;
   top: 0;
   z-index: 5;
@@ -339,6 +339,121 @@
   text-align: center;
   box-shadow: 0 8px 24px rgba(0,0,0,0.2);
 }
+.table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+
+
+/* ==========================
+   Responsive for Mobile
+========================== */
+@media (max-width: 768px) {
+  .inspection-table-container {
+    padding: 12px;
+    border-radius: 8px;
+  }
+
+  .table-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .search-input {
+    width: 100%;
+    max-width: 100%;
+    font-size: 0.85rem;
+    padding: 6px 10px;
+  }
+
+  .data-table th,
+  .data-table td {
+    font-size: 0.8rem;
+    padding: 6px 8px;
+  }
+
+  .actions button,
+  .btn-edit, .btn-delete, .btn-save, .btn-cancel, .btn-confirm {
+    padding: 5px 8px;
+    font-size: 0.75rem;
+  }
+
+  .pagination button {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+  }
+
+  .modal.professional {
+    width: 95%;
+    max-width: 95%;
+    max-height: 90vh;
+  }
+
+  .modal-header h2 {
+    font-size: 1.2rem;
+  }
+
+  .modal-grid {
+    grid-template-columns: 1fr; /* single column on mobile */
+  }
+
+  .field-input {
+    font-size: 0.9rem;
+    padding: 0.45rem;
+  }
+
+  .confirm-box {
+    width: 90%;
+    padding: 16px;
+  }
+}
+
+/* Small phones <480px */
+@media (max-width: 480px) {
+  .inspection-table-container {
+    padding: 8px;
+  }
+
+  .data-table th,
+  .data-table td {
+    font-size: 0.75rem;
+    padding: 4px 6px;
+  }
+
+  .actions button,
+  .btn-edit, .btn-delete, .btn-save, .btn-cancel, .btn-confirm {
+    padding: 4px 6px;
+    font-size: 0.7rem;
+  }
+
+  .search-input {
+    font-size: 0.8rem;
+    padding: 5px 8px;
+  }
+
+  .modal-header h2 {
+    font-size: 1rem;
+  }
+
+  .modal-grid {
+    grid-template-columns: 1fr; /* single column */
+    gap: 0.5rem;
+  }
+
+  .field-input {
+    font-size: 0.85rem;
+    padding: 0.4rem;
+  }
+
+  .confirm-box {
+    width: 90%;
+    padding: 12px;
+  }
+}
+
+/* Ensure table wrapper scrolls horizontally on small screens */
 .table-wrapper {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;

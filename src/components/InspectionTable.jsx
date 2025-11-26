@@ -5,7 +5,6 @@ import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
-
 function Toast({ message, type, onClose }) {
   return (
     <div className={`toast ${type}`}>
@@ -43,6 +42,8 @@ export default function InspectionTable() {
   const [formData, setFormData] = useState({});
   const [confirmDelete, setConfirmDelete] = useState(null);
   const fileInputRef = useRef(null);
+  const [confirmDeleteAll, setConfirmDeleteAll] = useState(false); // ✅ Added
+
 
   const numberFields = [
     "serialNo","year","inspectionId","offeredQtyCtn","offeredQtyPacks","noOfInspection",
@@ -91,16 +92,42 @@ export default function InspectionTable() {
   };
 
   const deleteInspection = async (id) => {
-    try {
-      await api.delete(`/inspections/${id}`);
-      showToast("Inspection deleted successfully!");
-      const newFiltered = inspections.filter((item) => item._id !== id);
-      const newTotalPages = Math.ceil(newFiltered.length / rowsPerPage);
-      if (currentPage > newTotalPages) setCurrentPage(newTotalPages || 1);
+  try {
+    await api.delete(`/inspections/${id}`);
+
+    // Show success message first
+    showToast("Inspection deleted successfully!", "success");
+
+    // Remove deleted item from UI immediately
+    const newFiltered = inspections.filter((item) => item._id !== id);
+    setInspections(newFiltered);
+
+    // Recalculate pages
+    const newTotalPages = Math.ceil(newFiltered.length / rowsPerPage);
+    if (currentPage > newTotalPages) setCurrentPage(newTotalPages || 1);
+
+    // Fetch fresh data after short delay so toast stays visible
+    setTimeout(() => {
       fetchInspections();
+    }, 500);
+
+  } catch (err) {
+    console.error("Delete error:", err);
+    showToast("Failed to delete inspection.", "error");
+  }
+};
+
+
+  //Delete ALL
+  const deleteAllInspections = async () => {
+    try {
+      await api.delete("/inspections/deleteAll");
+      setInspections([]);
+      setCurrentPage(1);
+      showToast("All inspections deleted successfully!");
     } catch (err) {
-      console.error("Delete error:", err);
-      showToast("Failed to delete inspection.", "error");
+      console.error("Delete All error:", err);
+      showToast("Failed to delete all inspections.", "error");
     }
   };
 
@@ -137,41 +164,64 @@ export default function InspectionTable() {
   };
 
   // -------- Import CSV/Excel and persist to MongoDB --------
-  const normalizeRow = (row) => {
-    const normalized = { ...row };
-
-    // Normalize dates
-    dateFields.forEach((f) => {
-      if (normalized[f]) {
-        const asDate = new Date(normalized[f]);
-        normalized[f] = isNaN(asDate.getTime()) ? normalized[f] : asDate.toISOString();
-      }
-    });
-
-    // Normalize numbers
-    numberFields.forEach((f) => {
-      if (normalized[f] !== undefined && normalized[f] !== null && normalized[f] !== "") {
-        const n = Number(normalized[f]);
-        normalized[f] = isNaN(n) ? normalized[f] : n;
-      }
-    });
-
-    // Derive year if missing
-    if (!normalized.year && normalized.inspectionDate) {
-      const dt = new Date(normalized.inspectionDate);
-      if (!isNaN(dt.getTime())) normalized.year = dt.getFullYear();
-    }
-
-    // Derive month if missing (use full month name)
-    if (!normalized.month && normalized.inspectionDate) {
-      const dt = new Date(normalized.inspectionDate);
-      if (!isNaN(dt.getTime())) {
-        normalized.month = dt.toLocaleString("en-US", { month: "long" });
-      }
-    }
-
-    return normalized;
+ // ------------------------ Updated normalizeRow for automatic space removal ------------------------
+const normalizeRow = (row) => {
+  const normalized = {};
+  const mapping = {
+    "Inspection Type": "inspectionType",
+    "pulled Terry": "pulledTerry",
+    "akti Self": "aktiSelf",
+    "actual Major": "actualMajor",
+    "actual Minor": "actualMinor",
+    "actual Oql": "actualOql",
+    "skip Stitch": "skipStitch",
+    "broken Stitch": "brokenStitch",
+    "runoff Stitch": "runoffStitch",
+    "poor Shape": "poorShape",
+    "insecure Label": "insecureLabel",
+    "Label missing": "missingLabel",
+    "Label contamination": "contaminationMajor",
+    "Major slant": "slantLabel",
+    "Label damage": "damageFabric",
+    "Fabric hole": "hole",
+    "loose Stitch": "looseStitch",
+    "single Untrimmed Thread": "singleUntrimmedThread",
+    "contamination Minor": "contaminationMinor",
+    "fly Yarn": "flyYarn",
+    "dust Mark": "dustMark",
+    "stain": "stainMinor"
   };
+
+  for (let k in row) {
+    const normalizedKey = mapping[k] || k.replace(/\s+/g, "");
+    normalized[normalizedKey] = row[k];
+  }
+
+  // ---------- Dates ----------
+  dateFields.forEach(f => {
+    if (normalized[f]) {
+      const asDate = new Date(normalized[f]);
+      normalized[f] = isNaN(asDate.getTime()) ? normalized[f] : asDate.toISOString();
+    }
+  });
+
+  // ---------- Numbers ----------
+  numberFields.forEach(f => {
+    if (normalized[f] !== undefined && normalized[f] !== null && normalized[f] !== "") {
+      const n = Number(normalized[f].toString().replace(/,/g, "")); // commas remove
+      normalized[f] = isNaN(n) ? 0 : n;  // NaN => 0
+    }
+  });
+
+  // ---------- Derive year/month if missing ----------
+  if (!normalized.year && normalized.inspectionDate) 
+      normalized.year = new Date(normalized.inspectionDate).getFullYear();
+  if (!normalized.month && normalized.inspectionDate) 
+      normalized.month = new Date(normalized.inspectionDate).toLocaleString("en-US", { month: "long" });
+
+  return normalized;
+};
+
 
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
@@ -180,115 +230,147 @@ export default function InspectionTable() {
     try {
       const reader = new FileReader();
       reader.onload = async (evt) => {
-        const bstr = evt.target.result;
-        const wb = XLSX.read(bstr, { type: "binary" });
+        const data = new Uint8Array(evt.target.result);
+        const wb = XLSX.read(data, { type: "array" });
         const wsname = wb.SheetNames[0];
         const ws = wb.Sheets[wsname];
         const importedDataRaw = XLSX.utils.sheet_to_json(ws, { defval: "" });
 
-        // Normalize rows to your schema
         const importedData = importedDataRaw.map(normalizeRow);
 
-        // Update UI immediately
         setInspections(importedData);
+        setCurrentPage(1);
         showToast("File imported successfully!");
 
-        // Persist to backend (bulk insert)
         try {
-          await api.post("/inspections/import", importedData, {
-            headers: { "Content-Type": "application/json" }
-          });
+          await api.post("/inspections/import", importedData, { headers: { "Content-Type": "application/json" } });
           showToast("Imported data saved to database!");
-          fetchInspections(); // reload from DB to ensure IDs etc.
+          fetchInspections();
         } catch (persistErr) {
           console.error("Persist error:", persistErr);
           showToast("Imported but failed to save to DB.", "error");
         }
       };
-      reader.readAsBinaryString(file);
+      reader.readAsArrayBuffer(file);
     } catch (err) {
       console.error("Import error:", err);
       showToast("Failed to import file.", "error");
     } finally {
-      // allow re-selecting the same file
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
   // ---------------------- Export PDF ----------------------
   const exportPDF = () => {
-  if (inspections.length === 0) return showToast("No data to export.", "error");
+    if (!inspections.length) return showToast("No data to export.", "error");
 
-  const doc = new jsPDF("landscape"); // landscape for wide tables
-  const generatedAt = new Date().toLocaleString();
-  doc.setFontSize(16);
-  doc.text("Inspection Report", 14, 14);
-  doc.setFontSize(10);
-  doc.text(`Generated: ${generatedAt}`, 14, 20);
+    const doc = new jsPDF("landscape");
+    doc.setFontSize(16);
+    doc.text("Inspection Report", 14, 14);
+    doc.setFontSize(10);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 20);
 
-  const baseColumns = [
-    "inspectionId",
-    "inspectionDate",
-    "year",
-    "month",
-    "inspectorName",
-    "inspectionStatus",
-    "pass",
-    "fail",
-    "abort",
-    "pending",
-  ];
-  const existingColumns = baseColumns.filter((c) =>
-    inspections.some((r) => Object.prototype.hasOwnProperty.call(r, c))
-  );
+    const baseColumns = [
+      "customer", "inspectionId", "inspectionDate", "year", "month",
+      "inspectorName", "inspectionStatus", "pass", "fail", "abort", "pending"
+    ];
+    const existingColumns = baseColumns.filter(c => inspections.some(r => Object.prototype.hasOwnProperty.call(r, c)));
 
-  const tableColumn = [...existingColumns, "Total Defects"];
+    const tableRows = inspections.map(row =>
+      existingColumns.map(col => {
+        if (dateFields.includes(col) && row[col]) {
+          const dt = new Date(row[col]);
+          return isNaN(dt.getTime()) ? row[col] : dt.toLocaleDateString();
+        }
+        return row[col] ?? "-";
+      })
+    );
 
-  const tableRows = inspections.map((row) => {
-    const cells = existingColumns.map((col) => {
-      if (dateFields.includes(col) && row[col]) {
-        const dt = new Date(row[col]);
-        return isNaN(dt.getTime()) ? row[col] : dt.toLocaleDateString();
+    autoTable(doc, {
+      head: [existingColumns.map(col => col.replace(/([A-Z])/g, " $1"))],
+      body: tableRows,
+      startY: 26,
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [33, 150, 243] },
+      theme: "striped",
+      didDrawPage: (data) => {
+        const pageNumber = doc.getCurrentPageInfo().pageNumber;
+        doc.setFontSize(8);
+        doc.text(`Page ${pageNumber}`, doc.internal.pageSize.getWidth() - 20, doc.internal.pageSize.getHeight() - 10);
       }
-      return row[col] ?? "-";
     });
-    return [...cells, getTotalDefects(row)];
-  });
 
-  // ✅ Correct usage of autoTable
-  autoTable(doc, {
-    head: [tableColumn],
-    body: tableRows,
-    startY: 26,
-    styles: { fontSize: 8, cellPadding: 2 },
-    headStyles: { fillColor: [33, 150, 243] },
-    theme: "striped",
-    didDrawPage: () => {
-      const pageNumber = doc.getCurrentPageInfo().pageNumber;
-      doc.setFontSize(8);
-      doc.text(
-        `Page ${pageNumber}`,
-        doc.internal.pageSize.getWidth() - 20,
-        doc.internal.pageSize.getHeight() - 10
-      );
-    },
-  });
+    doc.save("inspection_report.pdf");
+  };
 
-  doc.save("inspection_report.pdf");
-};
+//ALL DEFECTS SHOW PDF
+// const exportPDF = () => {
+//   if (!inspections.length) return showToast("No data to export.", "error");
+
+//   const doc = new jsPDF("landscape");
+//   doc.setFontSize(16);
+//   doc.text("Inspection Report", 14, 14);
+//   doc.setFontSize(10);
+//   doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 20);
+
+//   const baseColumns = [
+//     "customer", "inspectionId", "inspectionDate", "year", "month",
+//     "inspectorName", "inspectionStatus", "pass", "fail", "abort", "pending"
+//   ];
+
+//   // <-- ADD HERE
+//   const defectColumnsToInclude = defectFields.filter(field =>
+//     inspections.some(row => Number(row[field]) > 0)
+//   );
+
+//   // Merge base columns and dynamic defect columns
+//   const allColumns = [...baseColumns, ...defectColumnsToInclude];
+
+//   const tableRows = inspections.map(row =>
+//     allColumns.map(col => {
+//       if (dateFields.includes(col) && row[col]) {
+//         const dt = new Date(row[col]);
+//         return isNaN(dt.getTime()) ? row[col] : dt.toLocaleDateString();
+//       }
+//       return row[col] ?? "-";
+//     })
+//   );
+
+//   autoTable(doc, {
+//     head: [allColumns.map(col => col.replace(/([A-Z])/g, " $1"))],
+//     body: tableRows,
+//     startY: 26,
+//     styles: { fontSize: 8, cellPadding: 2 },
+//     headStyles: { fillColor: [33, 150, 243] },
+//     theme: "striped",
+//     didDrawPage: (data) => {
+//       const pageNumber = doc.getCurrentPageInfo().pageNumber;
+//       doc.setFontSize(8);
+//       doc.text(
+//         `Page ${pageNumber}`,
+//         doc.internal.pageSize.getWidth() - 20,
+//         doc.internal.pageSize.getHeight() - 10
+//       );
+//     }
+//   });
+
+//   doc.save("inspection_report.pdf");
+// };
+
+
 
 
   if (loading) return <p className="center-msg">Loading...</p>;
   if (error) return <p className="center-msg error">{error}</p>;
 
-  const columns = Object.keys(inspections[0] || {}).filter(
-    (k) => !["_id", "__v", "createdAt", "updatedAt"].includes(k)
-  );
+  const columns = Array.from(
+  new Set(
+    inspections.flatMap(row => Object.keys(row))
+  )
+).filter(k => !["_id","__v","createdAt","updatedAt"].includes(k));
 
-  const filtered = inspections.filter((row) =>
-    columns.some((col) =>
-      row[col]?.toString().toLowerCase().includes(searchTerm.toLowerCase())
-    )
+  const filtered = inspections.filter(row =>
+    columns.some(col => row[col]?.toString().toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const indexOfLast = currentPage * rowsPerPage;
@@ -301,21 +383,19 @@ export default function InspectionTable() {
       <div className="table-header">
         <h3>Inspection Records</h3>
         <div className="header-actions">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".xlsx,.csv"
-            onChange={handleFileUpload}
-            style={{ marginRight: "10px" }}
-          />
+          <input ref={fileInputRef} type="file" accept=".xlsx,.csv" onChange={handleFileUpload} style={{ marginRight: "10px" }} />
           <button onClick={exportPDF}>Export PDF</button>
+{/* Delete All Button */}
+  <button 
+  onClick={() => setConfirmDeleteAll(true)} 
+  style={{ backgroundColor: "red", color: "white", marginLeft: "10px" }}
+>
+  Delete All
+</button>
+
+          
         </div>
-        <input
-          className="search-input"
-          placeholder="Search..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+        <input className="search-input" placeholder="Search..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
       </div>
 
       <div className="table-wrapper">
@@ -323,8 +403,7 @@ export default function InspectionTable() {
           <thead>
             <tr>
               <th>#</th>
-              {columns.map((col) => <th key={col}>{col.replace(/([A-Z])/g, " $1")}</th>)}
-              <th>Total Defects</th>
+              {columns.map(col => <th key={col}>{col.replace(/([A-Z])/g, " $1")}</th>)}
               <th>Actions</th>
             </tr>
           </thead>
@@ -332,21 +411,19 @@ export default function InspectionTable() {
             {current.map((row, i) => (
               <tr key={row._id || i}>
                 <td>{indexOfFirst + i + 1}</td>
-                {columns.map((col) => (
+                {columns.map(col => (
                   <td key={col}>
                     {dateFields.includes(col) && row[col]
-                      ? (() => {
-                          const dt = new Date(row[col]);
-                          return isNaN(dt.getTime()) ? row[col] : dt.toLocaleDateString();
-                        })()
-                      : row[col] ?? "-"}
+                      ? (() => { const dt = new Date(row[col]); return isNaN(dt.getTime()) ? row[col] : dt.toLocaleDateString(); })()
+                      : row[col] ?? "-"
+                    }
                   </td>
                 ))}
-                <td>{getTotalDefects(row)}</td>
+    
                 <td className="actions">
                   <button className="btn-edit" onClick={() => openEditModal(row)}>Edit</button>
-                  <button className="btn-delete" onClick={() => setConfirmDelete(row._id)}>Delete</button>
-                </td>
+                  <button className="btn-delete" onClick={() => deleteInspection(row._id)}>Delete</button>
+                  </td>
               </tr>
             ))}
           </tbody>
@@ -354,17 +431,11 @@ export default function InspectionTable() {
       </div>
 
       <div className="pagination">
-        <button disabled={currentPage === 1} onClick={() => setCurrentPage(currentPage - 1)}>Prev</button>
+        <button disabled={currentPage===1} onClick={() => setCurrentPage(currentPage-1)}>Prev</button>
         {Array.from({ length: totalPages }, (_, i) => (
-          <button
-            key={i}
-            className={currentPage === i + 1 ? "active" : ""}
-            onClick={() => setCurrentPage(i + 1)}
-          >
-            {i + 1}
-          </button>
+          <button key={i} className={currentPage===i+1?"active":""} onClick={()=>setCurrentPage(i+1)}>{i+1}</button>
         ))}
-        <button disabled={currentPage === totalPages} onClick={() => setCurrentPage(currentPage + 1)}>Next</button>
+        <button disabled={currentPage===totalPages} onClick={()=>setCurrentPage(currentPage+1)}>Next</button>
       </div>
 
       {isEditing && (
@@ -372,53 +443,43 @@ export default function InspectionTable() {
           <div className="modal wide professional">
             <div className="modal-header">
               <h2>Edit Inspection Record</h2>
-              <button className="modal-close" onClick={() => setIsEditing(false)}>×</button>
+              <button className="modal-close" onClick={()=>setIsEditing(false)}>×</button>
             </div>
             <div className="modal-body">
               <div className="modal-grid">
-                {columns.map((col) => (
+                {columns.map(col => (
                   <div key={col} className="modal-field">
                     <label>{col.replace(/([A-Z])/g, " $1")}</label>
                     <input
-                      type={dateFields.includes(col) ? "date" : numberFields.includes(col) ? "number" : "text"}
+                      type={dateFields.includes(col)?"date":numberFields.includes(col)?"number":"text"}
                       name={col}
-                      value={
-                        dateFields.includes(col) && formData[col]
-                          ? (() => {
-                              const dt = new Date(formData[col]);
-                              return isNaN(dt.getTime()) ? "" : dt.toISOString().split("T")[0];
-                            })()
-                          : formData[col] ?? ""
-                      }
+                      value={dateFields.includes(col) && formData[col] ? new Date(formData[col]).toISOString().split("T")[0] : formData[col] ?? ""}
                       onChange={handleChange}
                       className="field-input"
                     />
                   </div>
                 ))}
-                <div className="modal-field">
-                  <label>Total Defects</label>
-                  <input type="number" value={getTotalDefects(formData)} readOnly className="field-input" />
-                </div>
               </div>
             </div>
             <div className="modal-footer">
-              <button className="btn-cancel" onClick={() => setIsEditing(false)}>Cancel</button>
+              <button className="btn-cancel" onClick={()=>setIsEditing(false)}>Cancel</button>
               <button className="btn-save" onClick={saveEdit}>Save Changes</button>
             </div>
           </div>
         </div>
       )}
 
-      {confirmDelete && (
-        <ConfirmDialog
-          title="Delete Confirmation"
-          message="Are you sure you want to delete this inspection record?"
-          onCancel={() => setConfirmDelete(null)}
-          onConfirm={() => { deleteInspection(confirmDelete); setConfirmDelete(null); }}
-        />
-      )}
+      {confirmDeleteAll && (
+  <ConfirmDialog
+    title="Delete All Confirmation"
+    message="Are you sure you want to delete ALL inspection records? This action cannot be undone."
+    onCancel={()=>setConfirmDeleteAll(false)}
+    onConfirm={()=>{ deleteAllInspections(); setConfirmDeleteAll(false); }}
+  />
+)}
 
-      {toast && <Toast {...toast} onClose={() => setToast(null)} />}
+
+      {toast && <Toast {...toast} onClose={()=>setToast(null)} />}
     </div>
   );
 }

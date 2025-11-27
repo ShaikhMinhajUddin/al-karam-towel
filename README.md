@@ -94,4 +94,4 @@ Full-Stack Developer | Mobile App Developer | UI/UX Designer
 
 🔗 Portfolio: (https://shaikhminhajuddin.netlify.app)
 
-🔗 LinkedIn: ()
+🔗 LinkedIn: (https://www.linkedin.com/in/shaikh-minhaj-uddin)
